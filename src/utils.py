@@ -25,8 +25,9 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def load_dotenv(dotenv_path: str = ".env") -> None:
+    # Hosted deploys (e.g. Render) pass variables directly, without a .env file
     if not Path(dotenv_path).exists():
-        raise FileNotFoundError(f"Dotenv file not found: {dotenv_path}")
+        return
 
     with Path(dotenv_path).open() as f:
         for line in f:

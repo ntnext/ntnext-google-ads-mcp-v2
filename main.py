@@ -6,15 +6,18 @@ import signal
 import sys
 import os
 import re
-import signal
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from types import FrameType
-from typing import Any, AsyncGenerator, Optional, Set
+from typing import Any, AsyncGenerator, Optional, Set, override
+
+import mcp.types as mt
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.server.auth.providers.google import GoogleProvider
-from fastmcp.server.middleware import Middleware, MiddlewareContext
+from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
+from fastmcp.tools.tool import Tool, ToolResult
 
 from src.sdk_client import GoogleAdsSdkClient, get_sdk_client, set_sdk_client
 from src.servers.account_budget_proposal_server import (
@@ -447,11 +450,21 @@ WRITE_TOOL = re.compile(r"(^|_)(create|update|add|remove|apply|dismiss|atomic)_"
 class ReadOnlyMiddleware(Middleware):
     """Hide and block every tool that writes to Google Ads."""
 
-    async def on_list_tools(self, context: MiddlewareContext, call_next):
+    @override
+    async def on_list_tools(
+        self,
+        context: MiddlewareContext[mt.ListToolsRequest],
+        call_next: CallNext[mt.ListToolsRequest, Sequence[Tool]],
+    ) -> Sequence[Tool]:
         tools = await call_next(context)
         return [t for t in tools if not WRITE_TOOL.search(t.name)]
 
-    async def on_call_tool(self, context: MiddlewareContext, call_next):
+    @override
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext[mt.CallToolRequestParams],
+        call_next: CallNext[mt.CallToolRequestParams, ToolResult],
+    ) -> ToolResult:
         if WRITE_TOOL.search(context.message.name):
             raise ToolError("This server is read-only")
         return await call_next(context)
