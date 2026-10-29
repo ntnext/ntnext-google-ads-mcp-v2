@@ -1,0 +1,34 @@
+cat > render.yaml <<'EOF'
+services:
+  - type: web
+    name: ntnext-google-ads-mcp-v2
+    runtime: python
+    plan: starter
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: uv run main.py --groups core,reporting
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: MCP_TRANSPORT
+        value: http
+      - key: MCP_READ_ONLY
+        value: "true"
+      - key: GOOGLE_ADS_USE_PROTO_PLUS
+        value: "true"
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: BASE_URL
+        sync: false
+EOF
