@@ -4,11 +4,17 @@ import argparse
 import asyncio
 import signal
 import sys
+import os
+import re
+import signal
 from contextlib import asynccontextmanager
 from types import FrameType
 from typing import Any, AsyncGenerator, Optional, Set
 
 from fastmcp import Context, FastMCP
+from fastmcp.exceptions import ToolError
+from fastmcp.server.auth.providers.google import GoogleProvider
+from fastmcp.server.middleware import Middleware, MiddlewareContext
 
 from src.sdk_client import GoogleAdsSdkClient, get_sdk_client, set_sdk_client
 from src.servers.account_budget_proposal_server import (
@@ -227,8 +233,18 @@ async def lifespan(app: Any) -> AsyncGenerator[None, None]:  # noqa: ARG001
 
 
 # Initialize main MCP server with lifespan
+auth = None
+if os.getenv("MCP_TRANSPORT") == "http":
+    auth = GoogleProvider(
+        client_id=os.environ["GOOGLE_OAUTH_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
+        base_url=os.environ["BASE_URL"],
+        required_scopes=["openid", "https://www.googleapis.com/auth/userinfo.email"],
+    )
+
 mcp = FastMCP(
     name="google-ads-mcp",
+    auth=auth,
     instructions="""This is a Google Ads MCP server that provides API tools for managing Google Ads accounts.
 
     It includes tools for:
@@ -425,6 +441,25 @@ else:
 for prefix, server in servers_to_mount:
     mcp.mount(server, prefix=prefix)
 
+WRITE_TOOL = re.compile(r"(^|_)(create|update|add|remove|apply|dismiss|atomic)_")
+
+
+class ReadOnlyMiddleware(Middleware):
+    """Hide and block every tool that writes to Google Ads."""
+
+    async def on_list_tools(self, context: MiddlewareContext, call_next):
+        tools = await call_next(context)
+        return [t for t in tools if not WRITE_TOOL.search(t.name)]
+
+    async def on_call_tool(self, context: MiddlewareContext, call_next):
+        if WRITE_TOOL.search(context.message.name):
+            raise ToolError("This server is read-only")
+        return await call_next(context)
+
+
+if os.getenv("MCP_READ_ONLY", "true") == "true":
+    mcp.add_middleware(ReadOnlyMiddleware())
+
 
 @mcp.tool
 async def check_sdk_client_status(ctx: Context) -> str:  # noqa: ARG001
@@ -464,7 +499,13 @@ async def run_with_shutdown():
         f"Registered tools: {len(tools)} tools from {len(servers_to_mount)} servers"
     )
     # Create a task for the server
-    server_task = asyncio.create_task(mcp.run_async(transport="stdio"))
+    if os.getenv("MCP_TRANSPORT") == "http":
+        run = mcp.run_async(
+            transport="http", host="0.0.0.0", port=int(os.getenv("PORT", "8000"))
+        )
+    else:
+        run = mcp.run_async(transport="stdio")
+    server_task = asyncio.create_task(run)
 
     # Wait for either the server to complete or shutdown signal
     shutdown_task = asyncio.create_task(shutdown_event.wait())
