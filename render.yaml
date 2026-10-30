@@ -2,7 +2,7 @@ services:
   - type: web
     name: ntnext-google-ads-mcp-v2
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install uv && uv sync --frozen --no-dev
     startCommand: uv run main.py --groups core,reporting
     envVars:
