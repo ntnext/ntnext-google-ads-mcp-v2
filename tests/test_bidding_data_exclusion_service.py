@@ -44,7 +44,7 @@ def bidding_data_exclusion_service(mock_sdk_client: Any) -> BiddingDataExclusion
     ):
         service = BiddingDataExclusionService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

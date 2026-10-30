@@ -36,7 +36,7 @@ def experiment_service(mock_sdk_client: Any) -> ExperimentService:
     ):
         service = ExperimentService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

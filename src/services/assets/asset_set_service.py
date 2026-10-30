@@ -42,13 +42,12 @@ class AssetSetService:
     @property
     def client(self) -> AssetSetServiceClient:
         """Get the asset set service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "AssetSetService", version="v23"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("AssetSetService", version="v23")
 
     async def create_asset_set(
         self,

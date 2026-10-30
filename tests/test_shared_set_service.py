@@ -36,7 +36,7 @@ def shared_set_service(mock_sdk_client: Any) -> SharedSetService:
     ):
         service = SharedSetService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

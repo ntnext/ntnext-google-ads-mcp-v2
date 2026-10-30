@@ -44,13 +44,12 @@ class ExperimentService:
     @property
     def client(self) -> ExperimentServiceClient:
         """Get the experiment service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "ExperimentService", version="v23"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("ExperimentService", version="v23")
 
     async def create_experiment(
         self,

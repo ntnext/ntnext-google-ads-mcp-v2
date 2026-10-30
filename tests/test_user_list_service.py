@@ -40,7 +40,7 @@ def user_list_service(mock_sdk_client: Any) -> UserListService:
     ):
         service = UserListService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

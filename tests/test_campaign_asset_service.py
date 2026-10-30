@@ -35,7 +35,7 @@ def campaign_asset_service(mock_sdk_client: Any) -> CampaignAssetService:
     ):
         service = CampaignAssetService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

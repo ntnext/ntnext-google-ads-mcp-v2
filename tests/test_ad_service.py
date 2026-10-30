@@ -32,7 +32,7 @@ def ad_service(mock_sdk_client: Any) -> AdService:
     ):
         service = AdService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

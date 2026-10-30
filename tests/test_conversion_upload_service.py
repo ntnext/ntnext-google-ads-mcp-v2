@@ -33,7 +33,7 @@ def conversion_upload_service(mock_sdk_client: Any) -> ConversionUploadService:
     ):
         service = ConversionUploadService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

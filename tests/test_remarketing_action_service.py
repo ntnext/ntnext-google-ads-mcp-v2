@@ -34,7 +34,7 @@ def remarketing_action_service(mock_sdk_client: Any) -> RemarketingActionService
     ):
         service = RemarketingActionService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

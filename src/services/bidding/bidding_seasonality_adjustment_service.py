@@ -51,13 +51,12 @@ class BiddingSeasonalityAdjustmentService:
     @property
     def client(self) -> BiddingSeasonalityAdjustmentServiceClient:
         """Get the bidding seasonality adjustment service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "BiddingSeasonalityAdjustmentService"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("BiddingSeasonalityAdjustmentService")
 
     async def create_bidding_seasonality_adjustment(
         self,

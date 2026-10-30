@@ -41,13 +41,12 @@ class ConversionUploadService:
     @property
     def client(self) -> ConversionUploadServiceClient:
         """Get the conversion upload service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "ConversionUploadService", version="v23"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("ConversionUploadService", version="v23")
 
     def _normalize_and_hash(self, value: str) -> str:
         """Normalize and hash a value for user matching.

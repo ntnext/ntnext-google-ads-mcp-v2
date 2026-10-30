@@ -34,13 +34,12 @@ class KeywordPlanCampaignKeywordService:
     @property
     def client(self) -> KeywordPlanCampaignKeywordServiceClient:
         """Get the keyword plan campaign keyword service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "KeywordPlanCampaignKeywordService"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("KeywordPlanCampaignKeywordService")
 
     def mutate_keyword_plan_campaign_keywords(  # pyright: ignore[reportUnusedFunction]
         self,

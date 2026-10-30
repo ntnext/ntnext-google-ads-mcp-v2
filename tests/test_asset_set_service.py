@@ -36,7 +36,7 @@ def asset_set_service(mock_sdk_client: Any) -> AssetSetService:
     ):
         service = AssetSetService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

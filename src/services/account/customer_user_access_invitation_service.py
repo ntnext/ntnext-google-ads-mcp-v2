@@ -46,13 +46,12 @@ class CustomerUserAccessInvitationService:
     @property
     def client(self) -> CustomerUserAccessInvitationServiceClient:
         """Get the customer user access invitation service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "CustomerUserAccessInvitationService"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("CustomerUserAccessInvitationService")
 
     async def create_customer_user_access_invitation(
         self,

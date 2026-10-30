@@ -43,7 +43,7 @@ def custom_audience_service(mock_sdk_client: Any) -> CustomAudienceService:
     ):
         service = CustomAudienceService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

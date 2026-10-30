@@ -31,7 +31,7 @@ def keyword_plan_idea_service(mock_sdk_client: Any) -> KeywordPlanIdeaService:
     ):
         service = KeywordPlanIdeaService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

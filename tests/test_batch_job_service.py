@@ -34,7 +34,7 @@ def batch_job_service(mock_sdk_client: Any) -> BatchJobService:
     ):
         service = BatchJobService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

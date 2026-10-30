@@ -35,7 +35,7 @@ def ad_group_label_service(mock_sdk_client: Any) -> AdGroupLabelService:
     ):
         service = AdGroupLabelService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

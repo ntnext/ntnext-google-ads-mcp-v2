@@ -43,7 +43,7 @@ def custom_interest_service(mock_sdk_client: Any) -> CustomInterestService:
     ):
         service = CustomInterestService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

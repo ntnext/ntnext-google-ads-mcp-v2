@@ -37,7 +37,7 @@ def campaign_draft_service(mock_sdk_client: Any) -> CampaignDraftService:
     ):
         service = CampaignDraftService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

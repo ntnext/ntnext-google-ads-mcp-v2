@@ -49,13 +49,12 @@ class ConversionCustomVariableService:
     @property
     def client(self) -> ConversionCustomVariableServiceClient:
         """Get the conversion custom variable service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "ConversionCustomVariableService"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("ConversionCustomVariableService")
 
     async def create_conversion_custom_variable(
         self,

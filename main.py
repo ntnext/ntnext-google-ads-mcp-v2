@@ -16,10 +16,19 @@ import mcp.types as mt
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.server.auth.providers.google import GoogleProvider
+from fastmcp.utilities.types import NotSet
+from key_value.aio.protocols import AsyncKeyValue
+from key_value.aio.stores.redis import RedisStore
+from key_value.aio.wrappers.encryption import FernetEncryptionWrapper
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools.tool import Tool, ToolResult
 
-from src.sdk_client import GoogleAdsSdkClient, get_sdk_client, set_sdk_client
+from src.sdk_client import (
+    GoogleAdsSdkClient,
+    get_sdk_client,
+    set_sdk_client,
+    use_login_customer_id,
+)
 from src.servers.account_budget_proposal_server import (
     account_budget_proposal_server,
 )
@@ -224,7 +233,8 @@ async def lifespan(app: Any) -> AsyncGenerator[None, None]:  # noqa: ARG001
     logger.info("Starting Google Ads SDK API MCP server...")
     client = None
     try:
-        client = GoogleAdsSdkClient()
+        # Hosted (HTTP) deploys call Google Ads as the logged-in user
+        client = GoogleAdsSdkClient(per_user=os.getenv("MCP_TRANSPORT") == "http")
         client.validate()
         set_sdk_client(client)
         logger.info("Google Ads SDK client initialized successfully")
@@ -236,13 +246,32 @@ async def lifespan(app: Any) -> AsyncGenerator[None, None]:  # noqa: ARG001
 
 
 # Initialize main MCP server with lifespan
+def create_auth_storage() -> Optional[AsyncKeyValue]:
+    """Encrypted Redis storage so logins survive restarts, if configured."""
+    redis_url = os.getenv("MCP_STORAGE_REDIS_URL")
+    if not redis_url:
+        return None
+    return FernetEncryptionWrapper(
+        key_value=RedisStore(url=redis_url),
+        source_material=os.environ["MCP_JWT_SIGNING_KEY"],
+        salt="google-ads-mcp-auth-storage",
+    )
+
+
 auth = None
 if os.getenv("MCP_TRANSPORT") == "http":
     auth = GoogleProvider(
         client_id=os.environ["GOOGLE_OAUTH_CLIENT_ID"],
         client_secret=os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
         base_url=os.environ["BASE_URL"],
-        required_scopes=["openid", "https://www.googleapis.com/auth/userinfo.email"],
+        required_scopes=[
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+            # Lets the server call Google Ads with each user's own access
+            "https://www.googleapis.com/auth/adwords",
+        ],
+        jwt_signing_key=os.getenv("MCP_JWT_SIGNING_KEY") or NotSet,
+        client_storage=create_auth_storage(),
     )
 
 mcp = FastMCP(
@@ -472,6 +501,62 @@ class ReadOnlyMiddleware(Middleware):
 
 if os.getenv("MCP_READ_ONLY", "true") == "true":
     mcp.add_middleware(ReadOnlyMiddleware())
+
+LOGIN_CUSTOMER_ID_SCHEMA: dict[str, Any] = {
+    "anyOf": [{"type": "string"}, {"type": "null"}],
+    "default": None,
+    "description": (
+        "Manager (MCC) account ID to access customer_id through, when your "
+        "access to that account comes from a manager account. Leave empty for "
+        "accounts you can access directly."
+    ),
+}
+
+
+class LoginCustomerIdMiddleware(Middleware):
+    """Give every tool that takes a customer_id an optional login_customer_id.
+
+    There is no default: the login-customer-id header is only sent when the
+    caller passes one, so users act through their own Google Ads access.
+    """
+
+    @override
+    async def on_list_tools(
+        self,
+        context: MiddlewareContext[mt.ListToolsRequest],
+        call_next: CallNext[mt.ListToolsRequest, Sequence[Tool]],
+    ) -> Sequence[Tool]:
+        tools = await call_next(context)
+        result: list[Tool] = []
+        for tool in tools:
+            properties = tool.parameters.get("properties", {})
+            if "customer_id" in properties and "login_customer_id" not in properties:
+                parameters = {
+                    **tool.parameters,
+                    "properties": {
+                        **properties,
+                        "login_customer_id": LOGIN_CUSTOMER_ID_SCHEMA,
+                    },
+                }
+                tool = tool.model_copy(update={"parameters": parameters})
+            result.append(tool)
+        return result
+
+    @override
+    async def on_call_tool(
+        self,
+        context: MiddlewareContext[mt.CallToolRequestParams],
+        call_next: CallNext[mt.CallToolRequestParams, ToolResult],
+    ) -> ToolResult:
+        arguments = context.message.arguments or {}
+        login_customer_id = arguments.pop("login_customer_id", None)
+        with use_login_customer_id(
+            str(login_customer_id) if login_customer_id else None
+        ):
+            return await call_next(context)
+
+
+mcp.add_middleware(LoginCustomerIdMiddleware())
 
 
 @mcp.tool

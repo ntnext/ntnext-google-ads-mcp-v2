@@ -35,7 +35,7 @@ def billing_setup_service(mock_sdk_client: Any) -> BillingSetupService:
     ):
         service = BillingSetupService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

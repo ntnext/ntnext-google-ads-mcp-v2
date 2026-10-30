@@ -40,7 +40,7 @@ def google_ads_field_service(
     ):
         service = GoogleAdsFieldService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

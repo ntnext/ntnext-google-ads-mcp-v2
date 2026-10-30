@@ -45,7 +45,7 @@ def account_budget_proposal_service(
     ):
         service = AccountBudgetProposalService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

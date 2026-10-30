@@ -31,7 +31,7 @@ def user_data_service(mock_sdk_client: Any) -> UserDataService:
     ):
         service = UserDataService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

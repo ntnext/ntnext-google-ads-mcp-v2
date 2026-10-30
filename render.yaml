@@ -12,17 +12,7 @@ services:
         value: http
       - key: MCP_READ_ONLY
         value: "true"
-      - key: GOOGLE_ADS_USE_PROTO_PLUS
-        value: "true"
       - key: GOOGLE_ADS_DEVELOPER_TOKEN
-        sync: false
-      - key: GOOGLE_ADS_CLIENT_ID
-        sync: false
-      - key: GOOGLE_ADS_CLIENT_SECRET
-        sync: false
-      - key: GOOGLE_ADS_REFRESH_TOKEN
-        sync: false
-      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
         sync: false
       - key: GOOGLE_OAUTH_CLIENT_ID
         sync: false
@@ -30,3 +20,15 @@ services:
         sync: false
       - key: BASE_URL
         sync: false
+      - key: MCP_JWT_SIGNING_KEY
+        generateValue: true
+      - key: MCP_STORAGE_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: ntnext-google-ads-mcp-v2-auth
+          property: connectionString
+
+  - type: keyvalue
+    name: ntnext-google-ads-mcp-v2-auth
+    plan: free
+    ipAllowList: []

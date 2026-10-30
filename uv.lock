@@ -541,6 +541,7 @@ dependencies = [
     { name = "fastmcp" },
     { name = "google-ads" },
     { name = "google-auth" },
+    { name = "py-key-value-aio", extra = ["redis"] },
     { name = "pyyaml" },
     { name = "requests" },
 ]
@@ -565,6 +566,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=2.14.7" },
     { name = "google-ads", specifier = ">=29.0.0" },
     { name = "google-auth", specifier = ">=2.49.2" },
+    { name = "py-key-value-aio", extras = ["redis"], specifier = ">=0.3.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.409" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", marker = "extra == 'dev'" },

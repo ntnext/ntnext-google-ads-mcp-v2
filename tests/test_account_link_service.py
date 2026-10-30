@@ -44,7 +44,7 @@ def account_link_service(mock_sdk_client: Any) -> AccountLinkService:
     ):
         service = AccountLinkService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

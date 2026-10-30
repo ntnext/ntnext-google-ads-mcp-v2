@@ -39,13 +39,12 @@ class CustomerConversionGoalService:
     @property
     def client(self) -> CustomerConversionGoalServiceClient:
         """Get the customer conversion goal service client."""
-        if self._client is None:
-            sdk_client = get_sdk_client()
-            self._client = sdk_client.client.get_service(
-                "CustomerConversionGoalService"
-            )
-        assert self._client is not None
-        return self._client
+        # A client set on _client (tests) wins; otherwise build one per call so
+        # each request uses the current user's credentials
+        if self._client is not None:
+            return self._client
+        sdk_client = get_sdk_client()
+        return sdk_client.client.get_service("CustomerConversionGoalService")
 
     async def mutate_customer_conversion_goals(
         self,

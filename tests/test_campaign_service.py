@@ -40,7 +40,7 @@ def campaign_service(mock_sdk_client: Any) -> CampaignService:
         return_value=mock_sdk_client,
     ):
         service = CampaignService()
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

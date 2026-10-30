@@ -33,7 +33,7 @@ def campaign_criterion_service(mock_sdk_client: Any) -> CampaignCriterionService
     ):
         service = CampaignCriterionService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

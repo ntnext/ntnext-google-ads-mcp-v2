@@ -35,7 +35,7 @@ def customer_user_access_service(mock_sdk_client: Any) -> CustomerUserAccessServ
     ):
         service = CustomerUserAccessService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 

@@ -39,7 +39,7 @@ def campaign_bid_modifier_service(mock_sdk_client: Any) -> CampaignBidModifierSe
     ):
         service = CampaignBidModifierService()
         # Force client initialization
-        _ = service.client
+        service._client = service.client  # type: ignore[reportPrivateUsage]
         return service
 
 
