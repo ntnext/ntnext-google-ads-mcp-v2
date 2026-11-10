@@ -269,6 +269,8 @@ async def test_execute_query(
     request = call_args[1]["request"]
     assert request.customer_id == customer_id
     assert request.query.strip() == query.strip()
+    # page_size is rejected by GoogleAdsService.Search since v17; it must stay unset
+    assert request.page_size == 0
 
     # Verify logging
     mock_ctx.log.assert_called_once_with(  # type: ignore

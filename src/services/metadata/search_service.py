@@ -273,15 +273,16 @@ class SearchService:
         ctx: Context,
         customer_id: str,
         query: str,
-        page_size: int = 1000,
     ) -> List[Dict[str, Any]]:
         """Execute a custom GAQL query.
+
+        Search responses use a fixed page size of 10,000 rows; use a GAQL
+        LIMIT clause to cap the number of results.
 
         Args:
             ctx: FastMCP context
             customer_id: The customer ID
             query: The GAQL (Google Ads Query Language) query
-            page_size: Number of results per page
 
         Returns:
             List of query results as dictionaries
@@ -293,7 +294,6 @@ class SearchService:
             request = SearchGoogleAdsRequest()
             request.customer_id = customer_id
             request.query = query
-            request.page_size = page_size
 
             # Execute search
             response = self.client.search(request=request)
@@ -451,14 +451,14 @@ def create_search_tools(service: SearchService) -> List[Callable[..., Awaitable[
         ctx: Context,
         customer_id: str,
         query: str,
-        page_size: int = 1000,
     ) -> List[Dict[str, Any]]:
         """Execute a custom GAQL (Google Ads Query Language) query.
+
+        Use a GAQL LIMIT clause to cap the number of results.
 
         Args:
             customer_id: The customer ID
             query: The GAQL query to execute
-            page_size: Number of results per page
 
         Returns:
             List of query results as dictionaries
@@ -471,7 +471,6 @@ def create_search_tools(service: SearchService) -> List[Callable[..., Awaitable[
             ctx=ctx,
             customer_id=customer_id,
             query=query,
-            page_size=page_size,
         )
 
     tools.extend([search_campaigns, search_ad_groups, search_keywords, execute_query])
