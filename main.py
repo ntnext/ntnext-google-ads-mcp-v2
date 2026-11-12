@@ -250,7 +250,12 @@ def create_auth_storage() -> Optional[AsyncKeyValue]:
     """Encrypted Redis storage so logins survive restarts, if configured."""
     redis_url = os.getenv("MCP_STORAGE_REDIS_URL")
     if not redis_url:
+        logger.warning(
+            "MCP_STORAGE_REDIS_URL is not set: logins are stored on local disk "
+            "and are lost whenever the server restarts"
+        )
         return None
+    logger.info("Login storage: Redis")
     return FernetEncryptionWrapper(
         key_value=RedisStore(url=redis_url),
         source_material=os.environ["MCP_JWT_SIGNING_KEY"],
