@@ -171,6 +171,52 @@ class TestGoogleAdsService:
         assert len(results) == 2
         assert mock_context.log.call_count >= 1  # type: ignore
 
+    async def test_search_stream_keeps_service_client_alive(
+        self, google_ads_service: Any, mock_context: Any
+    ):
+        """The per-call service client must outlive the stream it opened.
+
+        In per-user mode a fresh client is built for each call. If nothing keeps
+        it referenced, it is garbage-collected mid-stream and its gRPC channel
+        closes ("499 Channel deallocated!").
+        """
+        import gc
+        import weakref
+
+        class FakeServiceClient:
+            def search_stream(self, request: Any) -> Any:
+                owner = weakref.ref(self)
+
+                def batches() -> Any:
+                    for campaign_id in (1, 2):
+                        gc.collect()
+                        if owner() is None:
+                            raise RuntimeError("Channel deallocated!")
+                        batch = SearchGoogleAdsStreamResponse()
+                        row = GoogleAdsRow()
+                        row.campaign.id = campaign_id
+                        batch.results.append(row)
+                        yield batch
+
+                return batches()
+
+        # Build a new service client on every access, like per-user mode does
+        sdk_client = MagicMock()
+        sdk_client.client.get_service.side_effect = lambda *a, **k: (  # type: ignore
+            FakeServiceClient()
+        )
+        with patch(
+            "src.services.metadata.google_ads_service.get_sdk_client",
+            return_value=sdk_client,
+        ):
+            results = await google_ads_service.search_stream(
+                ctx=mock_context,
+                customer_id="1234567890",
+                query="SELECT campaign.id FROM campaign",
+            )
+
+        assert len(results) == 2
+
     async def test_search_stream_large_results(
         self, google_ads_service: Any, mock_context: Any, mock_client: Any
     ):

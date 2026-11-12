@@ -157,8 +157,12 @@ class GoogleAdsService:
             request.query = query
             request.summary_row_setting = summary_row_setting
 
-            # Execute streaming search
-            stream = self.client.search_stream(request=request)
+            # Keep the service client referenced until the stream is fully read.
+            # In per-user mode a new client is built per call; if it were a
+            # temporary, it would be garbage-collected, closing its gRPC channel
+            # and failing the stream with "499 Channel deallocated!".
+            service_client = self.client
+            stream = service_client.search_stream(request=request)
 
             # Process all results
             results: List[Dict[str, Any]] = []
